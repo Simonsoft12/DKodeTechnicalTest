@@ -1,0 +1,189 @@
+CREATE TABLE dbo.Products
+(
+    ID INT PRIMARY KEY IDENTITY,
+    product_id INT NOT NULL,   
+    SKU NVARCHAR(50) NOT NULL,      
+    name NVARCHAR(255) NOT NULL,          
+    EAN NVARCHAR(50) NOT NULL,               
+    producer_name NVARCHAR(255),            
+    main_category NVARCHAR(255),               
+    sub_category NVARCHAR(255),            
+    child_category NVARCHAR(255),               
+    is_wire BIT,
+    shipping NVARCHAR(100),                   
+    available BIT,                  
+    is_vendor BIT,                  
+    default_image NVARCHAR(2000)              
+);
+CREATE TYPE dbo.ProductType AS TABLE
+(
+    product_id INT PRIMARY KEY,
+    SKU NVARCHAR(50),
+    name NVARCHAR(255),
+    EAN NVARCHAR(50),
+    producer_name NVARCHAR(255),
+    main_category NVARCHAR(255),                
+    sub_category NVARCHAR(255),            
+    child_category NVARCHAR(255),
+    is_wire INT,
+    shipping NVARCHAR(100),    
+    available INT,
+    is_vendor INT,
+    default_image NVARCHAR(2000)
+);
+CREATE TABLE dbo.Inventory
+(
+    id INT IDENTITY(1,1) PRIMARY KEY, 
+    product_id INT NOT NULL,               
+    sku NVARCHAR(50) NOT NULL,     
+    unit NVARCHAR(50) NOT NULL, 
+    qty DECIMAL(18, 3),      
+    manufacturer NVARCHAR(255),  
+    shipping NVARCHAR(100),    
+    shipping_cost DECIMAL(18, 2)
+);
+CREATE TYPE dbo.InventoryType AS TABLE
+(
+    product_id INT,
+    sku NVARCHAR(50),
+    unit NVARCHAR(50),
+    qty DECIMAL(18, 3),
+    manufacturer NVARCHAR(255),
+    shipping NVARCHAR(100),    
+    shipping_cost DECIMAL(18, 2)
+);
+CREATE TABLE dbo.Prices
+(
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    Column1 NVARCHAR(50), 
+    Column2 NVARCHAR(50),              
+    Column3 DECIMAL(18, 2),              
+    Column4 DECIMAL(18, 2),             
+    Column5 DECIMAL(18, 2),            
+    Column6 DECIMAL(18, 2)              
+);
+CREATE TYPE dbo.PriceType AS TABLE
+(
+    Column1 NVARCHAR(50),
+    Column2 NVARCHAR(50),
+    Column3 DECIMAL(18, 2), 
+    Column4 DECIMAL(18, 2), 
+    Column5 DECIMAL(18, 2), 
+    Column6 DECIMAL(18, 2)
+);
+GO
+CREATE PROCEDURE dbo.InsertOrUpdateProducts
+    @Products dbo.ProductType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    MERGE INTO Products AS target
+    USING @Products AS source
+    ON target.product_id = source.product_id
+    WHEN MATCHED THEN
+        UPDATE SET
+            target.SKU = source.SKU,
+            target.name = source.name,
+            target.EAN = source.EAN,
+            target.producer_name = source.producer_name,
+            target.main_category = source.main_category,
+            target.sub_category = source.sub_category,
+            target.child_category = source.child_category,
+            target.is_wire = source.is_wire,
+            target.shipping = source.shipping,
+            target.available = source.available,
+            target.is_vendor = source.is_vendor,
+            target.default_image = source.default_image
+    WHEN NOT MATCHED THEN
+        INSERT (product_id, SKU, name, EAN, producer_name, main_category, sub_category, child_category, is_wire, shipping, available, is_vendor, default_image)
+        VALUES (source.product_id, source.SKU, source.name, source.EAN, source.producer_name, source.main_category, source.sub_category, source.child_category, source.is_wire, source.shipping, source.available, source.is_vendor, source.default_image);
+END
+GO
+CREATE PROCEDURE dbo.InsertOrUpdateInventory
+    @InventoryItems dbo.InventoryType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE i
+    SET 
+        i.sku = iv.sku,
+        i.unit = iv.unit,
+        i.qty = iv.qty,
+        i.manufacturer = iv.manufacturer,
+        i.shipping = iv.shipping,
+        i.shipping_cost = iv.shipping_cost
+    FROM Inventory i
+    INNER JOIN @InventoryItems iv ON i.product_id = iv.product_id;
+
+    INSERT INTO Inventory (product_id, sku, unit, qty, manufacturer, shipping, shipping_cost)
+    SELECT iv.product_id, iv.sku, iv.unit, iv.qty, iv.manufacturer, iv.shipping, iv.shipping_cost
+    FROM @InventoryItems iv
+    WHERE NOT EXISTS (SELECT 1 FROM Inventory i WHERE i.product_id = iv.product_id);
+END
+GO
+CREATE PROCEDURE dbo.InsertOrUpdatePrices
+    @Prices dbo.PriceType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE p
+    SET 
+        p.Column2 = i.Column2,
+        p.Column3 = i.Column3,
+        p.Column4 = i.Column4,
+        p.Column5 = i.Column5,
+        p.Column6 = i.Column6
+    FROM Prices p
+    INNER JOIN @Prices i ON p.Column1 = i.Column1;
+
+    INSERT INTO Prices (Column1, Column2, Column3, Column4, Column5, Column6)
+    SELECT Column1, Column2, Column3, Column4, Column5, Column6
+    FROM @Prices i
+    WHERE NOT EXISTS (
+        SELECT 1 FROM Prices p WHERE p.Column1 = i.Column1
+    );
+END
+GO
+CREATE PROCEDURE GetSupplierSummary
+    @SupplierName NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        p.producer_name AS SupplierName,  
+        p.main_category AS MainCategory,  
+        p.sub_category AS SubCategory,  
+        SUM(i.qty) AS TotalStockQuantity,  
+        CAST(
+            (
+                SUM(i.qty * ISNULL(CAST(pr.Column6 AS DECIMAL(18,2)), 0) * (1 + ISNULL(CAST(pr.Column5 AS DECIMAL(18,2)), 0) / 100))
+            ) 
+            / NULLIF(SUM(i.qty), 0)
+        AS DECIMAL(18,2)) AS AveragePriceIncludingVAT,  
+        CAST(
+            SUM(i.qty * ISNULL(CAST(pr.Column6 AS DECIMAL(18,2)), 0) * (1 + ISNULL(CAST(pr.Column5 AS DECIMAL(18,2)), 0) / 100))
+        AS DECIMAL(18,2)) AS TotalStockValueIncludingVAT,
+        CASE
+            WHEN p.is_vendor = 0 THEN 'Warehouse'  
+            WHEN p.is_vendor = 1 THEN 'Supplier'  
+            ELSE 'Unknown'  
+        END AS ShippedBy  
+    FROM dbo.Products p
+    INNER JOIN dbo.Inventory i ON p.product_id = i.product_id
+    INNER JOIN dbo.Prices pr ON p.sku = pr.Column2
+    WHERE p.producer_name = @SupplierName  
+    GROUP BY 
+        p.producer_name, 
+        p.main_category, 
+        p.sub_category, 
+        p.is_vendor  
+    HAVING SUM(i.qty) > 0  
+    ORDER BY 
+        p.main_category, 
+        p.sub_category, 
+        p.is_vendor;
+END;

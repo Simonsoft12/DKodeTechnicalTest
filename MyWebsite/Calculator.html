@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator with Currency Conversion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Calculator</h1>
+
+        <div class="display">
+            <input type="text" id="display" disabled>
+        </div>
+
+        <div class="buttons">
+            <button class="btn" onclick="toggleSign()">+/-</button>
+            <button class="btn" onclick="square()">x²</button>
+            <button class="btn" onclick="reciprocal()">1/x</button>
+            <button class="btn" onclick="clearDisplay()">C</button>
+
+            <button class="btn" onclick="appendToDisplay('1')">1</button>
+            <button class="btn" onclick="appendToDisplay('2')">2</button>
+            <button class="btn" onclick="appendToDisplay('3')">3</button>
+            <button class="btn" onclick="appendToDisplay('+')">+</button>
+
+            <button class="btn" onclick="appendToDisplay('4')">4</button>
+            <button class="btn" onclick="appendToDisplay('5')">5</button>
+            <button class="btn" onclick="appendToDisplay('6')">6</button>
+            <button class="btn" onclick="appendToDisplay('-')">-</button>
+
+            <button class="btn" onclick="appendToDisplay('7')">7</button>
+            <button class="btn" onclick="appendToDisplay('8')">8</button>
+            <button class="btn" onclick="appendToDisplay('9')">9</button>
+            <button class="btn" onclick="appendToDisplay('*')">*</button>
+
+            <button class="btn" onclick="appendToDisplay('0')">0</button>
+            <button class="btn" onclick="appendToDecimal()">.</button>
+            <button class="btn" onclick="appendToDisplay('/')">/</button>
+            <button class="btn bnt-equals" onclick="calculate()">=</button>
+        </div>
+
+
+        <div class="rates">
+            <button class="btn btn-full" onclick="fetchAndDisplayRates()">Get Exchange Rates</button>
+        </div>
+
+        <div id="rates" style="display:none">
+            <h3>Exchange Rates:</h3>
+            <p id="gbp-rate">GBP: </p>
+            <p id="eur-rate">EUR: </p>
+            <p id="usd-rate">USD: </p>
+        </div>
+
+        <div class="conversion">
+            <button class="btn" onclick="convertCurrency('GBP')">PLN to GBP</button>
+            <button class="btn" onclick="convertCurrency('EUR')">PLN to EUR</button>
+            <button class="btn" onclick="convertCurrency('USD')">PLN to USD</button>
+        </div>
+
+        <div id="amount" style="display:none;">
+            <span id="result"></span>
+        </div>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>

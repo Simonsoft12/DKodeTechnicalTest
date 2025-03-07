@@ -1,0 +1,28 @@
+[
+  {
+    "ContainingType": "MyAPI.Controllers.Csv.CsvController",
+    "Method": "DownloadAndSaveData",
+    "RelativePath": "api/Csv/download-and-save",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "MyAPI.Controllers.Supplier.SupplierController",
+    "Method": "GetSupplierSummary",
+    "RelativePath": "api/Supplier/supplier-summary",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "supplierName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
